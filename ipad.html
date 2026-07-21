@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>英単語チャレンジ 生徒表示</title>
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<style>
+:root{--ink:#101828;--bg:#f2f4f7;--blue:#155eef;--green:#079455;--red:#d92d20;--orange:#f79009}
+*{box-sizing:border-box}html,body{height:100%;margin:0;font-family:-apple-system,BlinkMacSystemFont,"Yu Gothic UI","Meiryo",sans-serif;color:var(--ink);background:var(--bg)}
+body{display:flex;align-items:stretch;justify-content:center}.app{width:100%;max-width:1100px;min-height:100%;padding:22px;display:flex;flex-direction:column}
+.connect{margin:auto;background:#fff;border-radius:24px;padding:30px;width:min(620px,100%);box-shadow:0 12px 40px #10182820;text-align:center}.connect h1{font-size:34px;margin:0 0 10px}.connect input{font-size:36px;text-align:center;letter-spacing:.2em;width:100%;padding:15px;border:2px solid #98a2b3;border-radius:14px}.connect button{margin-top:18px;border:0;border-radius:14px;background:var(--blue);color:#fff;font-size:24px;font-weight:800;padding:15px 30px}.status{margin-top:12px;color:#667085}
+.screen{display:none;flex:1;background:#fff;border-radius:28px;box-shadow:0 12px 40px #10182818;padding:30px;position:relative;overflow:hidden}.screen.show{display:flex;flex-direction:column}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;border-bottom:2px solid #eaecf0;padding-bottom:16px}.person{font-size:32px;font-weight:900}.meta{font-size:22px;color:#475467;text-align:right}.main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}.label{font-size:24px;color:#667085;font-weight:700}.prompt{font-size:clamp(42px,7vw,82px);font-weight:900;line-height:1.25;margin:24px 0;white-space:pre-wrap}.answer{font-size:clamp(34px,5vw,62px);font-weight:800;color:var(--blue);white-space:pre-wrap}.footer{font-size:22px;text-align:center;color:#667085;padding-top:14px}.badge{display:inline-block;background:#fffaeb;color:#b54708;border-radius:999px;padding:8px 16px;font-size:22px;font-weight:900}.flash{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:min(34vw,260px);font-weight:1000;background:#ffffffed;z-index:5}.flash.show{display:flex}.flash.ok{color:var(--green)}.flash.bad{color:var(--red)}
+.final .prompt{font-size:clamp(52px,8vw,96px)}.final.pass{background:#ecfdf3}.final.fail{background:#fff1f0}.score{font-size:clamp(70px,13vw,150px);font-weight:1000}.idle-title{font-size:clamp(44px,8vw,90px);font-weight:1000}.small{font-size:26px;color:#475467;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="connect" class="connect">
+    <h1>生徒用画面</h1>
+    <p>PCに表示された6桁の接続コードを入力</p>
+    <input id="code" inputmode="numeric" maxlength="6" placeholder="000000">
+    <button onclick="connectToPC()">PCに接続</button>
+    <div id="status" class="status">インターネット接続が必要です</div>
+  </section>
+  <section id="screen" class="screen">
+    <div class="top"><div id="person" class="person">英単語チャレンジ</div><div id="meta" class="meta"></div></div>
+    <div id="main" class="main"></div>
+    <div id="footer" class="footer"></div>
+    <div id="flash" class="flash"></div>
+  </section>
+</div>
+<script>
+let peer=null,conn=null;
+function setStatus(s){document.getElementById('status').textContent=s}
+function connectToPC(){
+ const code=document.getElementById('code').value.trim();if(!/^\d{6}$/.test(code))return setStatus('6桁の数字を入力してください。');
+ if(typeof Peer==='undefined')return setStatus('通信ライブラリを読み込めません。ネット接続を確認してください。');
+ try{if(peer)peer.destroy()}catch(e){}
+ setStatus('接続しています…');peer=new Peer();
+ peer.on('open',()=>{conn=peer.connect('eigo-pc-'+code,{reliable:true});conn.on('open',()=>{setStatus('接続しました');document.getElementById('connect').style.display='none';document.getElementById('screen').classList.add('show')});conn.on('data',render);conn.on('close',()=>showDisconnected());conn.on('error',()=>showDisconnected())});
+ peer.on('error',()=>setStatus('接続できません。コードとPC側の状態を確認してください。'));
+}
+function showDisconnected(){document.getElementById('connect').style.display='block';document.getElementById('screen').classList.remove('show');setStatus('接続が切れました。もう一度接続してください。')}
+function text(s){return String(s??'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])).replace(/\n/g,'<br>')}
+function flash(correct){const f=document.getElementById('flash');f.className='flash show '+(correct?'ok':'bad');f.textContent=correct?'○':'×';setTimeout(()=>f.className='flash',500)}
+function render(d){
+ const screen=document.getElementById('screen'),person=document.getElementById('person'),meta=document.getElementById('meta'),main=document.getElementById('main'),footer=document.getElementById('footer');screen.className='screen show';
+ if(d.type==='mark'||d.type==='oralMark'){flash(d.correct);return}
+ if(d.type==='idle'){person.textContent=d.title||'英単語チャレンジ';meta.textContent='';main.innerHTML=`<div class="idle-title">${text(d.message)}</div>`;footer.textContent='';return}
+ if(d.type==='grading'){person.textContent=d.participant;meta.innerHTML=`${text(d.testId)}<br>累計 ${d.cumulative}問目`;main.innerHTML=`<div class="label">${d.index} / ${d.total}問</div><div class="prompt">${text(d.prompt)}</div><div class="label">正解</div><div class="answer">${text(d.answer)}</div>`;footer.textContent='先生が採点しています';return}
+ if(d.type==='oral'){person.textContent=d.participant;meta.innerHTML=`筆記 ${d.score}点<br>累計 ${d.cumulative}問目`;main.innerHTML=`<div class="badge">あと${d.total}問チャレンジ</div><div class="label" style="margin-top:22px">口頭問題 ${d.index} / ${d.total}</div><div class="prompt">${text(d.prompt)}</div><div class="small">声に出して答えてください</div>`;footer.textContent='正解は先生のPCにだけ表示されています';return}
+ if(d.type==='final'){screen.classList.add('final',d.passed?'pass':'fail');person.textContent=d.participant;meta.textContent=`累計 ${d.cumulative}問目`;main.innerHTML=`<div class="score">${d.score}点</div><div class="prompt">${text(d.message)}</div>`;footer.textContent=d.passed?'おめでとう！':'もう一度挑戦しよう';return}
+}
+</script>
+</body>
+</html>
