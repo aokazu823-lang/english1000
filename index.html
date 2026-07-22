@@ -19,6 +19,18 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
 .toast{position:fixed;right:20px;bottom:20px;background:#101828;color:#fff;padding:12px 16px;border-radius:9px;opacity:0;transform:translateY(10px);transition:.2s;pointer-events:none;z-index:50}.toast.show{opacity:1;transform:none}
 #answerSheetPrint,#questionSheetPrint,#wordbookPrint{display:none}
 @media(max-width:850px){.span8,.span6,.span4,.span3{grid-column:span 12}.f2,.f3,.f4,.f5,.f6,.f8{grid-column:span 12}.wrong-grid{grid-template-columns:repeat(5,1fr)}th{position:static}}
+
+.participant-manage-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.participant-manage-card{border:1px solid #d0d5dd;border-radius:14px;padding:14px;background:#fff;box-shadow:0 2px 8px rgba(16,24,40,.04)}
+.participant-manage-card .meta{color:#667085;font-size:13px;margin-top:3px}
+.participant-manage-card .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.participant-manage-card .stat{background:#f2f4f7;border-radius:9px;padding:8px;text-align:center;font-size:12px}
+.participant-manage-card .stat b{display:block;font-size:17px;color:#101828}
+.dashboard-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+.dashboard-actions button{font-size:12px;padding:8px 10px}
+@media(max-width:1000px){.participant-manage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.participant-manage-grid{grid-template-columns:1fr}}
+
 @media print{
  @page{size:A4 portrait;margin:7mm}
  html,body{width:210mm;height:297mm;margin:0;padding:0;background:#fff}
@@ -42,20 +54,22 @@ table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:10px;bord
  .example{display:none}
  .wordbook-item{break-inside:avoid;border:1px solid #777;padding:3mm;margin-bottom:3mm}
  .wordbook-grid{columns:2;column-gap:6mm}
+  .force-page-break{break-after:page!important;page-break-after:always!important}
 }
 </style>
 </head>
 <body>
-<header><div><h1>英単語1000問チャレンジ</h1><div class="sub">参加者別テスト作成・採点・再テスト・間違い単語集</div></div><div class="sub">単語データ：2500語</div></header>
+<header><div><h1>英単語1000問チャレンジ</h1><div class="sub">進捗一覧からテスト作成・印刷・採点・再テスト</div></div><div class="sub">単語データ：2500語</div></header>
 <nav class="screen-only">
 <button class="tab active" data-view="dashboard">進捗一覧</button><button class="tab" data-view="participants">参加者</button><button class="tab" data-view="work">テスト作成・採点</button><button class="tab" data-view="wordbook">間違い単語集</button><button class="tab" data-view="settings">保存・設定</button>
 </nav>
 <main class="screen-only">
 <section id="dashboard" class="view active"><div class="grid">
 <div class="card span3 kpi"><div class="muted">参加者</div><div class="big" id="kpiParticipants">0</div></div><div class="card span3 kpi"><div class="muted">クリア総数</div><div class="big" id="kpiPassed">0枚</div></div><div class="card span3 kpi"><div class="muted">挑戦総回数</div><div class="big" id="kpiAttempts">0回</div></div><div class="card span3 kpi"><div class="muted">1000問達成</div><div class="big" id="kpiFinished">0人</div></div>
-<div class="card span12"><h2>参加者の進捗</h2><div id="progressCards" class="grid"></div></div>
+<div class="card span12"><h2>参加者の進捗・操作</h2><div class="notice">この画面から、テスト作成・印刷・採点・再テスト・次の50問まで操作できます。</div><div id="progressCards" class="grid" style="margin-top:12px"></div></div>
+<div id="dashboardScoringCard" class="card span12" style="display:none"><div class="participant-card"><h2 style="margin:0">採点・テスト操作</h2><button class="ghost" onclick="closeDashboardScoring()">閉じる</button></div><div id="dashboardScoreArea"></div></div>
 </div></section>
-<section id="participants" class="view"><div class="grid"><div class="card span12"><h2>参加者登録</h2><div class="formrow"><div class="f3"><label>表示名</label><input id="pName" placeholder="例：山田くん"></div><div class="f4"><label>学校名</label><input id="pSchool" placeholder="例：〇〇中学校"></div><div class="f2"><label>学年</label><select id="pGrade"><option>中学1年</option><option>中学2年</option><option selected>中学3年</option></select></div><div class="f3"><button onclick="addParticipant()">参加者を追加</button></div></div></div><div class="card span12"><h2>登録済み参加者</h2><div style="overflow:auto"><table><thead><tr><th>表示名</th><th>学校名</th><th>学年</th><th>クリア</th><th>出題済み</th><th>操作</th></tr></thead><tbody id="participantRows"></tbody></table></div></div></div></section>
+<section id="participants" class="view"><div class="grid"><div class="card span12"><h2>参加者登録</h2><div class="formrow"><div class="f3"><label>表示名</label><input id="pName" placeholder="例：山田くん"></div><div class="f4"><label>学校名</label><input id="pSchool" placeholder="例：〇〇中学校"></div><div class="f2"><label>学年</label><select id="pGrade"><option>中学1年</option><option>中学2年</option><option selected>中学3年</option></select></div><div class="f3"><button onclick="addParticipant()">参加者を追加</button></div></div></div><div class="card span12"><h2>登録済み参加者</h2><div id="participantRows" class="participant-manage-grid"></div></div></div></section>
 <section id="work" class="view"><div class="grid">
 <div class="card span4"><h2>テスト作成・呼び出し</h2><label>参加者</label><select id="createParticipant"></select><div class="actions" style="margin-top:10px"><button onclick="createTest()">新しい50問を作成</button></div><hr><label>テスト番号</label><input id="lookupTestId" placeholder="例：P01-001"><div class="actions" style="margin-top:10px"><button onclick="lookupTest()">呼び出す</button><button class="ghost" onclick="showRecentTests()">最近の一覧</button></div><div id="createdResult" class="muted" style="margin-top:12px">まだ作成されていません。</div><div id="recentTests" style="margin-top:12px"></div></div>
 <div class="card span8"><h2>印刷・採点・再テスト</h2><div id="scoreArea" class="muted">テストを作成するか、テスト番号を呼び出してください。</div></div>
@@ -94,11 +108,36 @@ function editParticipant(id){const p=participant(id);const name=prompt('表示�
 function removeParticipant(id){if(testsFor(id).length)return alert('テスト履歴がある参加者は削除できません。表示名の編集をご利用ください。');if(confirm('この参加者を削除しますか？')){state.participants=state.participants.filter(p=>p.id!==id);saveState()}}
 function groupedOrder(items){const ej=[],je=[];items.forEach((item,i)=>(item.direction==='EJ'?ej:je).push(i));return [...shuffle(ej),...shuffle(je)]}
 function createTest(){const pid=document.getElementById('createParticipant').value;if(!pid)return alert('参加者を選んでください。');const open=testsFor(pid).find(t=>t.status==='in_progress');if(open&&!confirm(`${participant(pid).name}には未クリアの ${open.id} があります。新しいテストも作成しますか？`))return;const used=usedWordIds(pid);let pool=WORDS.filter(w=>!used.has(w.id));if(pool.length<50)pool=WORDS;const chosen=shuffle(pool).slice(0,50);if(chosen.length!==50)return alert('50問分の単語を用意できませんでした。再読み込みしてもう一度お試しください。');const items=chosen.map((w,i)=>({wordId:w.id,direction:i<40?'EJ':'JE'}));const id=nextTestId(pid);const order=groupedOrder(items);const test={id,participantId:pid,sequence:testsFor(pid).length+1,items,status:'in_progress',createdAt:new Date().toISOString(),attempts:[{no:1,order,wrongItemIndexes:null,score:null,createdAt:new Date().toISOString()}]};state.tests.push(test);saveState();currentTestId=id;document.getElementById('createdResult').innerHTML=createdResultHtml(test);toast('テストを作成しました')}
+function createTestForParticipant(pid){
+ const sel=document.getElementById('createParticipant');if(sel)sel.value=pid;
+ const p=participant(pid);if(!p)return;
+ if(passedTests(pid)>=20)return alert('この参加者は1000問を達成しています。');
+ const unfinished=testsFor(pid).find(t=>t.status==='in_progress');
+ if(unfinished){openDashboardTest(unfinished.id);return alert('挑戦中のテストがあります。先に採点または再テストを完了してください。');}
+ createTest();
+ if(currentTestId)openDashboardTest(currentTestId);
+}
+function openDashboardTest(id){
+ const t=state.tests.find(x=>x.id===id);if(!t)return alert('テストが見つかりません。');
+ currentTestId=id;renderScoreArea(t);
+ const src=document.getElementById('scoreArea'),dst=document.getElementById('dashboardScoreArea');
+ if(src&&dst)dst.innerHTML=src.innerHTML;
+ const card=document.getElementById('dashboardScoringCard');card.style.display='block';card.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeDashboardScoring(){document.getElementById('dashboardScoringCard').style.display='none';document.getElementById('dashboardScoreArea').innerHTML=''}
+function dashboardActionHtml(p,open){
+ if(passedTests(p.id)>=20)return '<span class="pill ok">全20枚クリア</span>';
+ if(!open)return `<button onclick="createTestForParticipant('${p.id}')">START・50問作成</button>`;
+ const a=attemptOf(open);
+ if(a.score===null)return `<button onclick="openDashboardTest('${open.id}')">採点する</button><button class="ghost" onclick="printQuestionOnly('${open.id}')">問題印刷</button><button class="ghost" onclick="printAnswerOnly('${open.id}')">解答印刷</button>`;
+ if(open.status==='passed')return `<button onclick="createTestForParticipant('${p.id}')">次の50問</button><button class="ghost" onclick="openDashboardTest('${open.id}')">結果を見る</button><button class="ghost" onclick="printAnswerOnly('${open.id}')">解答印刷</button>`;
+ return `<button class="warn" onclick="makeRetest('${open.id}');setTimeout(()=>openDashboardTest('${open.id}'),350)">再テスト作成</button><button onclick="openDashboardTest('${open.id}')">採点・結果</button><button class="ghost" onclick="printAnswerOnly('${open.id}')">解答印刷</button>`;
+}
 function createdResultHtml(t){const p=participant(t.participantId);return `<div class="big">${esc(t.id)}</div><p><b>${esc(p.name)}</b>　${t.sequence}枚目・1回目</p><div class="actions"><button onclick="printInitial('${t.id}')">問題＋解答</button><button class="ghost" onclick="printQuestionOnly('${t.id}')">問題のみ</button><button class="ghost" onclick="printAnswerOnly('${t.id}')">解答のみ</button><button class="ghost" onclick="openScoring('${t.id}')">この画面で採点</button></div>`}
 function attemptOf(t){return t.attempts[t.attempts.length-1]}
 function orderedItems(t,a=attemptOf(t)){return a.order.map(idx=>({idx,item:t.items[idx],w:word(t.items[idx].wordId)}))}
 function setPrintTargets(ids){['questionSheetPrint','answerSheetPrint','wordbookPrint'].forEach(id=>document.getElementById(id).classList.toggle('print-active',ids.includes(id)))}
-function printInitial(id){const t=state.tests.find(x=>x.id===id);buildQuestionPrint(t,attemptOf(t));buildAnswerPrint(t,attemptOf(t));setPrintTargets(['questionSheetPrint','answerSheetPrint']);window.print();setTimeout(clearPrint,300)}
+function printInitial(id){const t=state.tests.find(x=>x.id===id);buildQuestionPrint(t,attemptOf(t));buildAnswerPrint(t,attemptOf(t));const q=document.querySelector('#questionSheetPrint .print-page');if(q)q.classList.add('force-page-break');setPrintTargets(['questionSheetPrint','answerSheetPrint']);window.print();setTimeout(clearPrint,300)}
 function printQuestionOnly(id){const t=state.tests.find(x=>x.id===id);buildQuestionPrint(t,attemptOf(t));setPrintTargets(['questionSheetPrint']);window.print();setTimeout(clearPrint,300)}
 function printAnswerOnly(id){const t=state.tests.find(x=>x.id===id);buildAnswerPrint(t,attemptOf(t));setPrintTargets(['answerSheetPrint']);window.print();setTimeout(clearPrint,300)}
 function printRetest(id){printQuestionOnly(id)}
@@ -113,7 +152,7 @@ let graderTimer=null,graderState=null;
 function stopGraderTimer(){if(graderTimer){clearInterval(graderTimer);graderTimer=null}}
 function renderScoreArea(t){stopGraderTimer();graderState=null;const p=participant(t.participantId),a=attemptOf(t);const status=t.status==='passed'?'<span class="pill ok">クリア済み</span>':'<span class="pill warn">挑戦中</span>';const preview=orderedItems(t,a).map((x,n)=>`<div class="qrow"><b>${n+1}</b><span>${x.item.direction==='EJ'?esc(x.w.en):nl(x.w.ja)}</span><span>${x.item.direction==='EJ'?nl(x.w.ja):esc(x.w.en)}</span></div>`).join('');let scoring='';if(a.score===null){scoring=`<div class="notice">自動採点：答えを2秒表示します。正解は <b>M</b>、不正解は <b>B</b>、一時停止・再開は <b>Enter</b>。押し忘れた場合は自動停止します。</div><div class="actions" style="margin:10px 0"><button class="ok" onclick="startGuidedScoring()">自動採点を開始</button><button class="ghost" onclick="showManualScoring()">番号クリックで採点</button></div><div id="guidedGrader"></div><div id="manualScoring" style="display:none"><p>間違えた問題番号をクリックしてください。</p><div id="wrongGrid" class="wrong-grid">${Array.from({length:50},(_,i)=>`<button class="wrong-no" data-no="${i+1}" onclick="this.classList.toggle('selected');updateScoreCount()">${i+1}</button>`).join('')}</div><p class="big" id="scoreCount">50点</p><button class="ok" onclick="registerScore()">採点結果を登録</button></div>`}else{scoring=`<p>この回の得点：<b>${a.score}点</b>　間違い：${a.wrongItemIndexes.length}問</p>${t.status==='passed'?'<div class="notice">45問以上のためクリアです。次の新しいテストを作成できます。</div>':`<button class="warn" onclick="makeRetest('${t.id}')">同じ50問を順番変更して再テスト作成</button>`}`}
 document.getElementById('scoreArea').innerHTML=`<div class="participant-card"><div><div class="big">${esc(t.id)}</div><b>${esc(p.name)}</b>　${t.sequence}枚目（累計${t.sequence*50}問目）・再挑戦${a.no}回目　${status}</div><div class="actions"><button class="ghost" onclick="printQuestionOnly('${t.id}')">問題のみ</button><button class="ghost" onclick="printAnswerOnly('${t.id}')">解答のみ</button><button class="ghost" onclick="printInitial('${t.id}')">問題＋解答</button></div></div><hr><div class="grid"><div class="span6">${scoring}</div><div class="span6"><h3>今回の並び</h3><div class="test-preview">${preview}</div></div></div>`}
-function showManualScoring(){stopGraderTimer();graderState=null;const g=document.getElementById('guidedGrader');if(g)g.innerHTML='';const m=document.getElementById('manualScoring');if(m)m.style.display='block'}
+function showManualScoring(){stopGraderTimer();graderState=null;const g=document.getElementById('guidedGrader');if(g)g.innerHTML='';const m=document.getElementById('manualScoring');if(m)m.style.display='block';const dash=document.getElementById('dashboardScoringCard'),dst=document.getElementById('dashboardScoreArea');if(dash&&dash.style.display!=='none'&&dst)dst.innerHTML=document.getElementById('scoreArea').innerHTML}
 function startGuidedScoring(){const t=state.tests.find(x=>x.id===currentTestId),a=attemptOf(t);if(!t||a.score!==null)return;document.getElementById('manualScoring').style.display='none';graderState={index:0,results:Array(50).fill(null),paused:false,remaining:20};renderGuidedGrader();startGraderCountdown()}
 function startGraderCountdown(){stopGraderTimer();if(!graderState||graderState.paused)return;graderState.remaining=20;updateCountdown();graderTimer=setInterval(()=>{if(!graderState||graderState.paused)return;graderState.remaining--;updateCountdown();if(graderState.remaining<=0){pauseGuidedScoring('入力がなかったため自動停止しました。MまたはBを押してから、Enterで再開してください。')}},100)}
 function updateCountdown(){const e=document.getElementById('graderCountdown');if(e&&graderState)e.textContent=(graderState.remaining/10).toFixed(1)+'秒'}
@@ -132,7 +171,22 @@ function printWordbook(unmasteredOnly){const pid=document.getElementById('wordbo
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='英単語チャレンジ_バックアップ_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
 function importData(ev){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x.participants)||!Array.isArray(x.tests))throw 0;if(confirm('現在の記録を読み込んだバックアップで置き換えますか？')){state=x;saveState();toast('バックアップを読み込みました')}}catch(e){alert('正しいバックアップファイルではありません。')}};r.readAsText(f);ev.target.value=''}
 function resetAll(){if(confirm('本当にすべての記録を初期化しますか？')&&confirm('この操作は元に戻せません。続けますか？')){state=defaultState();saveState();toast('初期化しました')}}
-function renderAll(){document.getElementById('kpiParticipants').textContent=state.participants.length;const pass=state.tests.filter(t=>t.status==='passed').length;document.getElementById('kpiPassed').textContent=pass+'枚';document.getElementById('kpiAttempts').textContent=state.tests.reduce((n,t)=>n+t.attempts.length,0)+'回';document.getElementById('kpiFinished').textContent=state.participants.filter(p=>passedTests(p.id)>=20).length+'人';document.getElementById('progressCards').innerHTML=state.participants.map(p=>{const passed=passedTests(p.id),pct=Math.min(100,passed/20*100),open=testsFor(p.id).find(t=>t.status==='in_progress');return`<div class="card span4"><div class="participant-card"><div class="avatar">${esc(p.name.slice(0,1))}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="muted">${esc(p.school)}・${esc(p.grade)}</div></div><span class="pill ${passed>=20?'ok':''}">${passed>=20?'1000問達成':passed+'/20枚'}</span></div><div class="progress" style="margin:12px 0"><i style="width:${pct}%"></i></div><div class="muted">出題済み ${usedWordIds(p.id).size}語／挑戦 ${allAttempts(p.id)}回${open?`／挑戦中 ${open.id}`:''}</div></div>`}).join('');document.getElementById('participantRows').innerHTML=state.participants.map(p=>`<tr><td><b>${esc(p.name)}</b><br><span class="muted">${p.id}</span></td><td>${esc(p.school)}</td><td>${esc(p.grade)}</td><td>${passedTests(p.id)}枚</td><td>${usedWordIds(p.id).size}語</td><td><div class="actions"><button class="ghost" onclick="editParticipant('${p.id}')">編集</button><button class="bad" onclick="removeParticipant('${p.id}')">削除</button></div></td></tr>`).join('');const opts=state.participants.map(p=>`<option value="${p.id}">${esc(p.name)}（${passedTests(p.id)}枚クリア）</option>`).join('');['createParticipant','wordbookParticipant'].forEach(id=>{const e=document.getElementById(id),v=e.value;e.innerHTML=opts;if([...e.options].some(o=>o.value===v))e.value=v});if(currentTestId){const t=state.tests.find(x=>x.id===currentTestId);if(t&&document.getElementById('work').classList.contains('active'))renderScoreArea(t)}}
+function renderAll(){
+ document.getElementById('kpiParticipants').textContent=state.participants.length;
+ const pass=state.tests.filter(t=>t.status==='passed').length;
+ document.getElementById('kpiPassed').textContent=pass+'枚';
+ document.getElementById('kpiAttempts').textContent=state.tests.reduce((n,t)=>n+t.attempts.length,0)+'回';
+ document.getElementById('kpiFinished').textContent=state.participants.filter(p=>passedTests(p.id)>=20).length+'人';
+ document.getElementById('progressCards').innerHTML=state.participants.map(p=>{
+   const passed=passedTests(p.id),pct=Math.min(100,passed/20*100);
+   const open=[...testsFor(p.id)].reverse().find(t=>t.status==='in_progress')||[...testsFor(p.id)].reverse().find(t=>t.status==='passed');
+   return `<div class="card span4"><div class="participant-card"><div class="avatar">${esc(p.name.slice(0,1))}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="muted">${esc(p.school)}・${esc(p.grade)}</div></div><span class="pill ${passed>=20?'ok':''}">${passed>=20?'1000問達成':passed+'/20枚'}</span></div><div class="progress" style="margin:12px 0"><i style="width:${pct}%"></i></div><div class="muted">出題済み ${usedWordIds(p.id).size}語／挑戦 ${allAttempts(p.id)}回${open?`／最新 ${open.id}`:''}</div><div class="dashboard-actions">${dashboardActionHtml(p,open)}</div></div>`;
+ }).join('')||'<div class="notice span12">参加者を登録すると、ここからすべての操作ができます。</div>';
+ document.getElementById('participantRows').innerHTML=state.participants.map(p=>`<div class="participant-manage-card"><div class="participant-card"><div class="avatar">${esc(p.name.slice(0,1))}</div><div style="flex:1"><b>${esc(p.name)}</b><div class="meta">ID：${p.id}</div></div></div><div class="meta">${esc(p.school)}・${esc(p.grade)}</div><div class="stats"><div class="stat"><b>${passedTests(p.id)}</b>クリア枚数</div><div class="stat"><b>${usedWordIds(p.id).size}</b>出題済み語数</div></div><div class="actions"><button class="ghost" onclick="editParticipant('${p.id}')">編集</button><button class="bad" onclick="removeParticipant('${p.id}')">削除</button></div></div>`).join('')||'<div class="notice">まだ参加者はいません。</div>';
+ const opts=state.participants.map(p=>`<option value="${p.id}">${esc(p.name)}（${passedTests(p.id)}枚クリア）</option>`).join('');
+ ['createParticipant','wordbookParticipant'].forEach(id=>{const e=document.getElementById(id);if(!e)return;const v=e.value;e.innerHTML=opts;if([...e.options].some(o=>o.value===v))e.value=v});
+ if(currentTestId){const t=state.tests.find(x=>x.id===currentTestId);if(t)renderScoreArea(t)}
+}
 renderAll();showRecentTests();
 </script>
 </body></html>
